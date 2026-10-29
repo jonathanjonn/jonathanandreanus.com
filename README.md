@@ -160,6 +160,11 @@ preview is its cover; every other page uses the name card in
 
 ## Deployment
 
-The build is fully static (`dist/`), so no Vercel adapter is needed. Vercel
-detects Astro, installs with pnpm, and reads the Node.js major version from
-`engines.node`.
+Cloudflare Pages builds and deploys every push to `main`, with these settings:
+
+- Build command: `pnpm build`
+- Build output directory: `dist`
+- Environment variable `PNPM_VERSION=11.28.9`, because the build image defaults
+  to pnpm 10. Node.js comes from `.nvmrc`.
+
+The build is fully static, so no Cloudflare adapter is needed.
