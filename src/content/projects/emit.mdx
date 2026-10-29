@@ -1,0 +1,27 @@
+---
+title: Emit
+summary: A push-to-talk dictation app for macOS that turns speech into clean text or a structured coding prompt, and falls back to a local whisper.cpp server when cloud providers fail.
+year: 2026
+role: Solo project
+tags: [Tauri 2, Rust, React, TypeScript, whisper.cpp]
+cover:
+  src: ./emit/workspace.png
+  alt: Emit's main window in Clean mode, ready to record, with the hint "Hold Right Option anywhere".
+media:
+  - type: image
+    src: ./emit/settings.png
+    alt: Emit settings showing the speech-to-text route, from 9router to Groq to an OpenAI-compatible endpoint to local whisper.
+order: 6
+---
+
+Hold Right Option anywhere and speak. Emit has Clean and Raw modes for dictation, and a Dev mode that turns speech into a structured coding prompt. It can type the result into the focused app.
+
+## How it works
+
+- Speech-to-text falls back from 9router to Groq to any OpenAI-compatible endpoint, and then to a local whisper.cpp server. Each provider has a cooldown and a health check.
+- Optional streaming transcription runs over a WebSocket owned by the Rust side, with a bounded audio queue.
+- API keys live in the macOS Keychain.
+
+## Status
+
+Version 0.1.0, self-signed and not notarized. The source is private. I fixed a memory leak, which brought memory use down from 642 MB to 40 MB.

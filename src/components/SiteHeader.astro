@@ -1,0 +1,166 @@
+---
+import { getNavigation, getProfile } from "../lib/content";
+
+const [profile, navigation] = await Promise.all([
+  getProfile(),
+  getNavigation(),
+]);
+const { name } = profile.data;
+const path = Astro.url.pathname;
+const current = (href: string) =>
+  href === "/projects/" && path.startsWith("/projects") ? "page" : undefined;
+---
+
+<header class="sticky top-0 z-40 border-b border-line bg-canvas">
+  <div class="shell flex h-16 items-center justify-between gap-6">
+    <a
+      href="/"
+      class="min-w-0 truncate font-display text-[1.375rem] leading-11 tracking-[-0.01em] no-underline"
+    >
+      {name}
+    </a>
+    <div class="-mr-3 flex shrink-0 items-center md:gap-6">
+      {navigation.length > 0 && (
+        <nav aria-label="Primary" class="hidden md:block">
+          <ul class="flex gap-8">
+            {navigation.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  aria-current={current(item.href)}
+                  class="hover-line -mx-1.5 px-1.5 py-3 aria-[current=page]:decoration-accent"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+      <button
+        type="button"
+        data-theme-toggle
+        aria-pressed="false"
+        class="grid size-11 place-items-center text-ink"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 18 18"
+          aria-hidden="true"
+          fill="none"
+        >
+          <circle
+            cx="9"
+            cy="9"
+            r="7.5"
+            stroke="currentColor"
+            stroke-width="1.5"
+          ></circle>
+          <path d="M9 1.5a7.5 7.5 0 0 1 0 15Z" fill="currentColor"></path>
+        </svg>
+        <span class="sr-only">Dark theme</span>
+      </button>
+      {navigation.length > 0 && (
+        <button
+          type="button"
+          data-menu-open
+          aria-haspopup="dialog"
+          aria-controls="site-menu"
+          class="min-h-11 px-3 md:hidden"
+        >
+          Menu
+        </button>
+      )}
+    </div>
+  </div>
+
+  {navigation.length > 0 && (
+    <dialog id="site-menu" data-menu aria-label="Menu" class="sheet">
+      <div class="shell flex h-16 items-center justify-between border-b border-line">
+        <span class="min-w-0 truncate font-display text-[1.375rem]">
+          {name}
+        </span>
+        <button
+          type="button"
+          data-menu-close
+          class="-mr-3 min-h-11 shrink-0 px-3"
+        >
+          Close
+        </button>
+      </div>
+      <nav aria-label="Primary" class="shell pt-8">
+        <ol>
+          {navigation.map((item, index) => (
+            <li class="border-b border-line">
+              <a
+                href={item.href}
+                aria-current={current(item.href)}
+                class="group flex items-baseline gap-5 py-4 no-underline"
+              >
+                <span
+                  class="text-meta text-accent tabular-nums"
+                  aria-hidden="true"
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span class="hover-line font-display text-headline">
+                  {item.label}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </dialog>
+  )}
+</header>
+
+<script>
+  const root = document.documentElement;
+  const darkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+  const toggles = document.querySelectorAll("[data-theme-toggle]");
+
+  const isDark = () =>
+    root.dataset.theme ? root.dataset.theme === "dark" : darkScheme.matches;
+
+  const syncToggles = () => {
+    for (const toggle of toggles) {
+      toggle.setAttribute("aria-pressed", String(isDark()));
+    }
+  };
+
+  for (const toggle of toggles) {
+    toggle.addEventListener("click", () => {
+      const theme = isDark() ? "light" : "dark";
+      root.dataset.theme = theme;
+      try {
+        localStorage.setItem("theme", theme);
+      } catch {
+        // Storage unavailable: the choice lasts until the next page load.
+      }
+      syncToggles();
+    });
+  }
+  darkScheme.addEventListener("change", syncToggles);
+  syncToggles();
+
+  const menu = document.querySelector<HTMLDialogElement>("[data-menu]");
+  if (menu) {
+    document
+      .querySelector("[data-menu-open]")
+      ?.addEventListener("click", () => menu.showModal());
+    menu
+      .querySelector("[data-menu-close]")
+      ?.addEventListener("click", () => menu.close());
+    for (const link of menu.querySelectorAll("a")) {
+      link.addEventListener("click", () => menu.close());
+    }
+    // The menu is only for narrow screens; close it if the window widens.
+    window
+      .matchMedia("(min-width: 48rem)")
+      .addEventListener("change", (event) => {
+        if (event.matches) menu.close();
+      });
+  }
+</script>

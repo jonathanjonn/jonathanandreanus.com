@@ -1,0 +1,41 @@
+---
+title: Nura
+summary: A voice-first care companion prototype for older patients and their caregivers, built for AI Builder Cup 2026 (Google, hack2skill).
+year: 2026
+role: "Team of 3. My part: app development, testing and the Cloud Run deploy"
+tags: [Next.js 16, FastAPI, Gemini 2.5 Flash-Lite, Firestore, Google Cloud Run]
+links:
+  - label: Live demo
+    url: https://nura-demo-91587259709.us-central1.run.app
+  - label: Source
+    url: https://github.com/jonathanjonn/nura
+cover:
+  src: ./nura/voice-report.png
+  alt: Nura's voice report screen. The patient said "I want to eat fried chicken" and Nura marks it Needs Review against the recorded care profile.
+media:
+  - type: image
+    src: ./nura/caregiver-summary.png
+    alt: Caregiver dashboard with today's care summary, a week calendar of medicine and meal reminders, and recent reports.
+    caption: The caregiver view.
+featured: true
+order: 3
+---
+
+Patients tell Nura what they ate or which medicine they are taking. Nura checks each report against the care instructions on record and flags anything that conflicts, and caregivers see the day's reports and reminders on a dashboard. The demo has no sign-in and runs with two fixed roles.
+
+## How it works
+
+- Voice input uses the browser's Web Speech API.
+- One Cloud Run container runs the Next.js frontend in front of a FastAPI backend.
+- FastAPI keeps records in Firestore and asks Gemini 2.5 Flash-Lite to check reports and answer caregiver questions.
+- Answers about the care record come from stored records only: Gemini can cite just the source IDs it is given. There is no embedding model or vector database.
+- Cloud Scheduler triggers reminders, Secret Manager holds the API key, and Cloud Logging records diagnostics.
+
+## My part
+
+- Built the care schedule: daily meal and medicine times in Asia/Jakarta time, each marked upcoming, due, late after 30 minutes or missed after 2 hours, with in-app notifications for the caregiver.
+- Made new care instructions start as an editable draft, which the caregiver reviews and confirms before Nura checks any report against it.
+- Deployed the app to Google Cloud Run, with Firestore for storage (local runs keep SQLite) and a Cloud Scheduler job that runs reminders every minute through an internal route that accepts only the scheduler's OIDC token.
+- Expanded the backend test suite.
+- Added browser checks at four widths from 320 to 1280 px, including axe accessibility scans, with 0 violations.
+- Handled Gemini rate limits. A 429 from Gemini is classified as a rate-limit error, gets an incident ID, and passes Gemini's Retry-After back to the client, with no automatic retry. The incident review traced all 6 Gemini 429s to the 6 matching 503s the app returned.

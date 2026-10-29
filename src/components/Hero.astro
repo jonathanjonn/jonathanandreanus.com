@@ -1,0 +1,61 @@
+---
+import { getProfile } from "../lib/content";
+
+const profile = await getProfile();
+const { name, role, intro, location, availability, email, resume, socials } =
+  profile.data;
+const hasLinks = email || resume || socials.length > 0;
+---
+
+<section aria-labelledby="hero-name" class="shell pt-12 pb-8 md:pt-20 lg:pt-28">
+  <div class="grid gap-y-8 md:grid-cols-12 md:gap-x-8">
+    {(location || availability) && (
+      <p class="flex flex-wrap gap-x-6 gap-y-1 text-meta md:col-span-12">
+        {location && <span class="text-muted">{location}</span>}
+        {availability && <span>{availability}</span>}
+      </p>
+    )}
+    <h1
+      id="hero-name"
+      class="font-display text-display font-normal text-balance wrap-break-word md:col-span-12"
+    >
+      {name}
+    </h1>
+    {role && (
+      <p class="max-w-[22ch] font-display text-title text-balance md:col-span-5 md:mt-1">
+        {role}
+      </p>
+    )}
+    {(intro || hasLinks) && (
+      <div class="md:col-span-6 md:col-start-7 lg:col-span-5 lg:col-start-8">
+        {intro && <p class="max-w-[36ch] text-lead">{intro}</p>}
+        {hasLinks && (
+          <p class="mt-4 flex flex-wrap gap-x-6">
+            {email && (
+              <a
+                href={`mailto:${email}`}
+                class="inline-flex min-h-11 min-w-11 items-center"
+              >
+                Email
+              </a>
+            )}
+            {resume && (
+              <a href={resume} class="inline-flex min-h-11 items-center">
+                Résumé (PDF)
+              </a>
+            )}
+            {socials.map((social) => (
+              <a
+                href={social.url}
+                rel="me noopener"
+                class="inline-flex min-h-11 items-center"
+              >
+                {social.label}
+              </a>
+            ))}
+          </p>
+        )}
+      </div>
+    )}
+  </div>
+</section>

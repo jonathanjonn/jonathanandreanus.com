@@ -1,0 +1,81 @@
+---
+import { Image } from "astro:assets";
+import SectionHeader from "../../components/SectionHeader.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { coverTransitionName, getProjects } from "../../lib/content";
+
+const projects = await getProjects();
+---
+
+<BaseLayout title="Work">
+  <div class="shell pt-12 pb-24 md:pt-20 md:pb-36">
+    <SectionHeader
+      id="work-count"
+      as="p"
+      marker="Index"
+      label={`${projects.length} ${projects.length === 1 ? "project" : "projects"}`}
+    />
+    <h1 class="mt-8 font-display text-headline md:mt-12 md:grid md:grid-cols-12 md:gap-x-8">
+      <span class="md:col-span-9 md:col-start-4">Work</span>
+    </h1>
+    {projects.length === 0 ? (
+      <p class="mt-10 text-lead text-muted md:mt-16 md:grid md:grid-cols-12 md:gap-x-8">
+        <span class="max-w-[40ch] md:col-span-9 md:col-start-4">
+          No projects have been published yet.
+        </span>
+      </p>
+    ) : (
+      <ol class="mt-6 md:mt-10">
+        {projects.map((project) => {
+          const { title, summary, year, tags, cover } = project.data;
+          return (
+            <li class="card group grid grid-cols-[minmax(0,1fr)_auto] gap-x-5 border-b border-line py-7 md:grid-cols-12 md:gap-x-8 md:py-10">
+              <p class="text-meta text-muted tabular-nums md:col-span-2 md:pt-2">
+                {year}
+              </p>
+              <div class="col-start-1 md:col-span-6 md:col-start-3">
+                <h2 class="mt-1 font-display text-title text-balance md:mt-0">
+                  <a
+                    href={`/projects/${project.id}/`}
+                    class="stretched-link hover-line"
+                  >
+                    {title}
+                  </a>
+                </h2>
+                <p class="mt-2 max-w-[56ch] text-muted">{summary}</p>
+                {tags.length > 0 && (
+                  <ul class="dot-list mt-4 flex flex-wrap text-meta md:hidden">
+                    {tags.map((tag) => (
+                      <li>{tag}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {tags.length > 0 && (
+                <ul class="dot-list hidden flex-wrap content-start text-meta md:col-span-2 md:flex md:pt-2">
+                  {tags.map((tag) => (
+                    <li>{tag}</li>
+                  ))}
+                </ul>
+              )}
+              {cover && (
+                <div class="col-start-2 row-span-2 row-start-1 w-20 self-start overflow-hidden bg-surface md:col-span-2 md:col-start-11 md:row-span-1 md:w-full">
+                  <Image
+                    src={cover.src}
+                    alt=""
+                    width={640}
+                    height={480}
+                    fit="cover"
+                    sizes="(min-width: 48rem) 15vw, 5rem"
+                    class="w-full transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                    style={`view-transition-name: ${coverTransitionName(project)}`}
+                  />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    )}
+  </div>
+</BaseLayout>

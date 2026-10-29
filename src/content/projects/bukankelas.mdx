@@ -1,0 +1,63 @@
+---
+title: Bukankelas
+summary: The Mandarin course platform I co-founded and built, from checkout and payments to promo launches.
+year: 2026
+role: Technical co-founder, sole engineer
+tags: [Next.js 14, TypeScript, Prisma, MySQL, Redis, Clerk, Midtrans]
+links:
+  - label: Live site
+    url: https://bukankelas.com
+cover:
+  src: ./bukankelas/promo-admin.png
+  alt: Promo code admin for Mandarin 101 with redeemed and reserved counters, and codes whose quota is used up marked HABIS (sold out).
+media:
+  - type: image
+    src: ./bukankelas/promo-race.png
+    alt: Two phone checkouts side by side. On the left a 99% promo code is applied and the total is Rp 7.980. On the right the code's quota is used up and the total is back to the normal price.
+    caption: Checkout with a 99% launch code applied (left), and what a buyer sees after losing a race for the same quota (right). Staging test accounts.
+featured: true
+order: 1
+---
+
+## In numbers
+
+- 100+ paying students, with 0 payment mismatches since launch.
+- 18 of 50 soft-launch webinar attendees (36%) became paying students.
+- 7 production security vulnerabilities closed, each fix written test-first.
+- 1,000 simulated buyers racing for 1 promo slot: exactly 1 winner and 0 errors.
+
+## The problem
+
+Bukankelas sells Mandarin 101, a course with video chapters and quizzes. Before the soft launch on 28 August 2026, the payment path had two rules: a payment can't unlock the course with the wrong amount, and an order can't be paid twice without anyone noticing.
+
+The launch webinar on 1 November 2026 will give out 99%-off promo codes with a quota of 1 each. No code can be redeemed twice, even when several buyers try it at the same moment.
+
+## What I built
+
+- Checkout on Midtrans Snap, with QRIS, recorded in a course-order ledger.
+- A payment webhook that checks the signature with a timing-safe comparison, checks the amount, and confirms the status with Midtrans before it unlocks anything.
+- An atomic claim that only moves a pending order to paid, so a duplicate notification can't unlock the course twice, plus a reconciliation cron.
+- Promo codes with quotas, reserved inside a single Serializable database transaction.
+- The webinar funnel: a lead form, scheduled Resend emails over 25 days, an n8n webhook, and emails that stop once the lead pays.
+- CI on GitHub Actions against a real MySQL 8 service.
+
+The stack is Next.js 14 (App Router), Prisma on MySQL, Redis for caching and rate limiting, Clerk and Cloudflare R2. It runs on a VPS with PM2 and nginx, with separate staging and production databases.
+
+## Decisions
+
+### An `expire` notice doesn't end the order
+
+The first version cancelled an order when Midtrans sent `expire`. That wasn't safe, because `expire` can mean one payment method expired while the Snap page still accepts others. Orders are now released only after the payment deadline plus 15 minutes, so an unpaid promo slot stays held longer.
+
+### A standalone order ledger
+
+The ledger table has no foreign keys. It holds the minimum state needed to stay idempotent across retries and restarts, and because its migration only adds a table, rolling back the code doesn't need a database rollback.
+
+### Return BUSY when retries run out
+
+Promo slots are reserved in a Serializable transaction. When its retries run out, the buyer gets a BUSY response instead of a slot the system can't guarantee. The cost is under-selling under heavy contention: in one test, 5 of the accounts racing for a quota of 20 got BUSY while slots were still free.
+
+## Testing
+
+- Race test on MySQL 8: of 1,000 buyers racing for 1 slot, 1 won, 999 were told the quota was used up, and none hit an error.
+- Load test on staging with 600 virtual users: promo slots never went over quota.

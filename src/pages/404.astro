@@ -1,0 +1,20 @@
+---
+import SectionHeader from "../components/SectionHeader.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Page not found">
+  <div class="shell pt-12 pb-32 md:pt-20 md:pb-48">
+    <SectionHeader id="not-found" as="h1" marker="404" label="Page not found" />
+    <div class="mt-10 md:mt-16 md:grid md:grid-cols-12 md:gap-x-8">
+      <div class="md:col-span-9 md:col-start-4">
+        <p class="max-w-[22ch] font-display text-headline text-balance">
+          This page doesn’t exist or has moved.
+        </p>
+        <a href="/" class="mt-8 inline-flex min-h-11 items-center">
+          Go to the homepage
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

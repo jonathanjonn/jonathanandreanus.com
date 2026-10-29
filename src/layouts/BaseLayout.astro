@@ -1,0 +1,106 @@
+---
+import type { ImageMetadata } from "astro";
+import { Font, getImage } from "astro:assets";
+import SiteFooter from "../components/SiteFooter.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import defaultImage from "../assets/og-default.png";
+import { getProfile, isFixtureMode } from "../lib/content";
+import "../styles/global.css";
+
+interface Props {
+  /** Page title. The homepage omits it and uses the profile name and role. */
+  title?: string;
+  description?: string;
+  /** Social preview image, emitted once `site` is configured. Default: name card. */
+  image?: ImageMetadata;
+  type?: "website" | "article";
+}
+
+const profile = await getProfile();
+const { name, role, intro } = profile.data;
+const {
+  title,
+  description = intro ?? role,
+  image = defaultImage,
+  type = "website",
+} = Astro.props;
+
+const documentTitle = title
+  ? `${title} · ${name}`
+  : [name, role].filter(Boolean).join(" · ");
+const canonicalURL = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site)
+  : undefined;
+const ogImage =
+  Astro.site && image
+    ? new URL(
+        (
+          await getImage({
+            src: image,
+            width: 1200,
+            height: 630,
+            fit: "cover",
+            format: "jpg",
+          })
+        ).src,
+        Astro.site,
+      )
+    : undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem("theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch {
+        // Storage unavailable: follow the system color scheme.
+      }
+    </script>
+    <Font
+      cssVariable="--font-newsreader"
+      preload={[{ subset: "latin", style: "normal" }]}
+    />
+    <Font
+      cssVariable="--font-schibsted"
+      preload={[{ subset: "latin", style: "normal" }]}
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{documentTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {canonicalURL && <link rel="canonical" href={canonicalURL} />}
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={documentTitle} />
+    {description && <meta property="og:description" content={description} />}
+    {canonicalURL && <meta property="og:url" content={canonicalURL} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && <meta name="twitter:card" content="summary_large_image" />}
+  </head>
+  <body id="top" class="flex min-h-dvh flex-col">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-canvas focus:px-4 focus:py-3"
+    >
+      Skip to content
+    </a>
+    <SiteHeader />
+    <main id="main" class="flex-1">
+      <slot />
+    </main>
+    <SiteFooter />
+    {isFixtureMode && (
+      <p class="pointer-events-none fixed right-3 bottom-3 z-50 bg-ink px-3 py-1.5 text-meta text-canvas">
+        Design fixtures: sample content, not real information
+      </p>
+    )}
+  </body>
+</html>

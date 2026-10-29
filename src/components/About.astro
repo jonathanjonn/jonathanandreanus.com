@@ -1,0 +1,46 @@
+---
+import { Image } from "astro:assets";
+import { render } from "astro:content";
+import { getProfile } from "../lib/content";
+import SectionHeader from "./SectionHeader.astro";
+
+interface Props {
+  marker: string;
+}
+
+const { marker } = Astro.props;
+const profile = await getProfile();
+const { portrait } = profile.data;
+const { Content } = await render(profile);
+---
+
+<section
+  id="about"
+  aria-labelledby="about-heading"
+  class="shell pt-20 md:pt-32"
+>
+  <SectionHeader id="about-heading" marker={marker} label="About" />
+  <div class="mt-10 grid gap-y-10 md:mt-16 md:grid-cols-12 md:gap-x-8">
+    {portrait && (
+      <Image
+        src={portrait.src}
+        alt={portrait.alt}
+        width={800}
+        height={1000}
+        fit="cover"
+        sizes="(min-width: 64rem) 22vw, (min-width: 48rem) 30vw, 20rem"
+        class="w-full max-w-80 md:col-span-4 md:max-w-none lg:col-span-3"
+      />
+    )}
+    <div
+      class:list={[
+        "prose prose-intro",
+        portrait
+          ? "md:col-span-7 md:col-start-6 lg:col-start-5"
+          : "md:col-span-8 md:col-start-4",
+      ]}
+    >
+      <Content />
+    </div>
+  </div>
+</section>

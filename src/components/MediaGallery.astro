@@ -1,0 +1,223 @@
+---
+import { getImage, Image } from "astro:assets";
+import type { Project } from "../lib/content";
+import SectionHeader from "./SectionHeader.astro";
+
+interface Props {
+  items: Project["data"]["media"];
+}
+
+const { items } = Astro.props;
+const FULL_SIZES = "(min-width: 90rem) 84rem, 92vw";
+const HALF_SIZES = "(min-width: 48rem) 46vw, 92vw";
+
+// The first item spans the grid, as does a last item left alone in its row.
+const isFull = (index: number) =>
+  index === 0 || (index === items.length - 1 && index % 2 === 1);
+
+const prepared = await Promise.all(
+  items.map(async (item) =>
+    item.type === "image"
+      ? {
+          ...item,
+          large: await getImage({
+            src: item.src,
+            width: Math.min(item.src.width, 2400),
+            format: "webp",
+          }),
+        }
+      : {
+          ...item,
+          posterImage: item.poster
+            ? await getImage({
+                src: item.poster,
+                // A poster takes one URL (no srcset): a middle-ground width.
+                width: Math.min(item.poster.width, 1280),
+                format: "webp",
+              })
+            : undefined,
+        },
+  ),
+);
+const imageCount = items.filter((item) => item.type === "image").length;
+---
+
+<section
+  aria-labelledby="media-heading"
+  class="shell mt-20 md:mt-32"
+  data-gallery
+>
+  <SectionHeader id="media-heading" label="Media" />
+  <ul class="mt-8 grid gap-x-8 gap-y-12 md:mt-12 md:grid-cols-2">
+    {prepared.map((item, index) => (
+      <li class:list={[isFull(index) && "md:col-span-2"]}>
+        <figure>
+          {item.type === "image" ? (
+            <a
+              href={item.large.src}
+              class="group block cursor-zoom-in overflow-hidden bg-surface"
+              data-viewer-item
+              data-alt={item.alt}
+              data-caption={item.caption}
+              data-width={item.large.attributes.width}
+              data-height={item.large.attributes.height}
+            >
+              <Image
+                src={item.src}
+                alt={item.alt}
+                sizes={isFull(index) ? FULL_SIZES : HALF_SIZES}
+                class="w-full transition-transform duration-700 ease-out group-hover:scale-[1.015]"
+              />
+              <span class="sr-only">(open in image viewer)</span>
+            </a>
+          ) : (
+            <video
+              src={item.src}
+              poster={item.posterImage?.src}
+              aria-label={item.alt}
+              controls
+              playsinline
+              preload="metadata"
+              muted={item.autoplay}
+              loop={item.autoplay}
+              data-autoplay={item.autoplay ? "" : undefined}
+              class:list={[
+                "w-full bg-surface",
+                !item.posterImage && "aspect-video",
+              ]}
+              style={
+                item.posterImage
+                  ? `aspect-ratio: ${item.posterImage.attributes.width} / ${item.posterImage.attributes.height}`
+                  : undefined
+              }
+            />
+          )}
+          {item.caption && (
+            <figcaption class="mt-3 max-w-[60ch] text-meta text-muted">
+              {item.caption}
+            </figcaption>
+          )}
+        </figure>
+      </li>
+    ))}
+  </ul>
+
+  {imageCount > 0 && (
+    <dialog data-viewer aria-label="Image viewer" class="sheet">
+      <div class="flex h-full flex-col">
+        <div class="shell flex h-16 shrink-0 items-center justify-between">
+          <p
+            class="text-meta text-muted tabular-nums"
+            aria-live="polite"
+            data-viewer-count
+          />
+          <button type="button" class="-mr-3 min-h-11 px-3" data-viewer-close>
+            Close
+          </button>
+        </div>
+        <div
+          class="flex min-h-0 flex-1 items-center justify-center px-5 md:px-12"
+          data-viewer-stage
+        />
+        <div class="shell grid min-h-20 shrink-0 grid-cols-[auto_1fr_auto] items-center gap-4 py-3">
+          <button
+            type="button"
+            class="-ml-3 min-h-11 px-3"
+            data-viewer-step="-1"
+          >
+            Previous
+          </button>
+          <p class="text-center text-meta text-muted" data-viewer-caption />
+          <button
+            type="button"
+            class="-mr-3 min-h-11 px-3"
+            data-viewer-step="1"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </dialog>
+  )}
+</section>
+
+<script>
+  for (const gallery of document.querySelectorAll("[data-gallery]")) {
+    const viewer = gallery.querySelector<HTMLDialogElement>("[data-viewer]");
+    const stage = viewer?.querySelector("[data-viewer-stage]");
+    const count = viewer?.querySelector("[data-viewer-count]");
+    const caption = viewer?.querySelector("[data-viewer-caption]");
+    const items = [
+      ...gallery.querySelectorAll<HTMLAnchorElement>("[data-viewer-item]"),
+    ];
+    if (!viewer || !stage || !count || !caption || items.length === 0) continue;
+
+    // Created on first use rather than in the markup: an <img> needs a src.
+    const image = document.createElement("img");
+    image.className = "max-h-full w-auto max-w-full object-contain";
+
+    let current = 0;
+    const show = (index: number) => {
+      current = (index + items.length) % items.length;
+      const item = items[current];
+      image.src = item.href;
+      if (!image.isConnected) stage.append(image);
+      image.alt = item.dataset.alt ?? "";
+      image.width = Number(item.dataset.width);
+      image.height = Number(item.dataset.height);
+      caption.textContent = item.dataset.caption ?? "";
+      count.textContent = `${current + 1} / ${items.length}`;
+    };
+
+    items.forEach((item, index) => {
+      item.addEventListener("click", (event) => {
+        event.preventDefault();
+        show(index);
+        viewer.showModal();
+      });
+    });
+
+    for (const button of viewer.querySelectorAll<HTMLButtonElement>(
+      "[data-viewer-step]",
+    )) {
+      button.hidden = items.length === 1;
+      button.addEventListener("click", () =>
+        show(current + Number(button.dataset.viewerStep)),
+      );
+    }
+    viewer
+      .querySelector("[data-viewer-close]")
+      ?.addEventListener("click", () => viewer.close());
+    viewer.addEventListener("keydown", (event) => {
+      if (items.length === 1) return;
+      if (event.key === "ArrowLeft") show(current - 1);
+      if (event.key === "ArrowRight") show(current + 1);
+    });
+  }
+
+  // Autoplaying clips play only while visible, and never with reduced motion.
+  const autoplay = document.querySelectorAll<HTMLVideoElement>(
+    "video[data-autoplay]",
+  );
+  if (
+    autoplay.length > 0 &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const { target, isIntersecting } of entries) {
+          const video = target as HTMLVideoElement;
+          if (isIntersecting) {
+            video.play().catch(() => {
+              // Autoplay blocked by the browser: the controls remain.
+            });
+          } else {
+            video.pause();
+          }
+        }
+      },
+      { threshold: 0.5 },
+    );
+    for (const video of autoplay) observer.observe(video);
+  }
+</script>

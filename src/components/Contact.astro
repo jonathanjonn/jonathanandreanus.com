@@ -1,0 +1,59 @@
+---
+import { getProfile } from "../lib/content";
+import SectionHeader from "./SectionHeader.astro";
+
+interface Props {
+  marker: string;
+}
+
+const { marker } = Astro.props;
+const profile = await getProfile();
+const { email, socials, contactNote } = profile.data;
+// Break points after "@" and "." so long addresses wrap cleanly on phones.
+const emailParts = email?.split(/(?=[@.])/) ?? [];
+---
+
+<section
+  id="contact"
+  aria-labelledby="contact-heading"
+  class="shell pt-20 pb-28 md:pt-32 md:pb-40"
+>
+  <SectionHeader id="contact-heading" marker={marker} label="Contact" />
+  <div class="mt-10 grid gap-y-10 md:mt-16 md:grid-cols-12 md:gap-x-8">
+    {contactNote && (
+      <p class="max-w-[40ch] text-lead md:col-span-6 md:col-start-4">
+        {contactNote}
+      </p>
+    )}
+    {email && (
+      <p class="md:col-span-12">
+        <a
+          href={`mailto:${email}`}
+          class="hover-line font-display text-[clamp(1.75rem,0.9rem+4.4vw,6rem)] leading-[1.05] tracking-[-0.025em]"
+        >
+          {emailParts.map((part, index) => (
+            <>
+              {index > 0 && <wbr />}
+              {part}
+            </>
+          ))}
+        </a>
+      </p>
+    )}
+    {socials.length > 0 && (
+      <ul class="-ml-2 flex flex-wrap gap-x-4 md:col-span-9 md:col-start-4">
+        {socials.map((social) => (
+          <li>
+            <a
+              href={social.url}
+              rel="me noopener"
+              class="inline-flex min-h-11 items-center px-2"
+            >
+              {social.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</section>

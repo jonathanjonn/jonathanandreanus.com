@@ -1,0 +1,35 @@
+---
+import { getProfile } from "../lib/content";
+
+const profile = await getProfile();
+const { name, socials } = profile.data;
+---
+
+<footer class="border-t border-line">
+  <div class="shell flex flex-col gap-4 py-8 text-meta md:flex-row md:items-center md:justify-between md:gap-8">
+    <p class="text-muted">
+      © {new Date().getFullYear()} {name}
+    </p>
+    {socials.length > 0 && (
+      <ul class="-ml-2 flex flex-wrap md:ml-0">
+        {socials.map((social) => (
+          <li>
+            <a
+              href={social.url}
+              rel="me noopener"
+              class="hover-line inline-flex min-h-11 items-center px-2"
+            >
+              {social.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+    <a
+      href="#top"
+      class="hover-line -ml-2 inline-flex min-h-11 items-center self-start px-2 md:ml-0 md:self-auto"
+    >
+      Back to top
+    </a>
+  </div>
+</footer>

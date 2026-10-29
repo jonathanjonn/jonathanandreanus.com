@@ -1,0 +1,16 @@
+---
+title: Hermes Swarm
+summary: A CLI plugin for Hermes Agent that runs other coding agents as workers on a declared mission, plus a Tauri desktop app that owns their terminals.
+year: 2026
+role: Solo project, prototype
+tags: [Python, Tauri 2, React, xterm.js]
+order: 7
+---
+
+The plugin runs the mission inside Hermes Agent, by Nous Research. It schedules tasks as a dependency graph, holds each finished task for review before the tasks that depend on it can start, passes messages through a mailbox, and starts and stops workers. Each external agent CLI sits behind a small adapter. There is no daemon, message broker or database.
+
+The desktop app runs each worker's terminal. The plugin talks to it over a Unix socket that only the current user can open, with a 64 KB cap per message. Each terminal can be switched between Hermes control and manual control.
+
+## Status
+
+Prototype. The plugin is at version 0.3.0 and the desktop app at 0.1.0. Neither is published.

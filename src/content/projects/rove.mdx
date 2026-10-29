@@ -1,0 +1,29 @@
+---
+title: Rove
+summary: A native macOS workspace where Claude Code, Codex and Hermes Agent run side by side, with its own MCP server so Claude Code and Codex can talk to each other.
+year: 2026
+role: Solo project, pre-release
+tags: [Swift 6.2, AppKit, SwiftTerm, MCP]
+cover:
+  src: ./rove/agent-panes.png
+  alt: Rove window with a file tree, a TypeScript editor and two agent panes for Claude Code and Codex, open on a sample project.
+media:
+  - type: image
+    src: ./rove/run-inspector.png
+    alt: Run inspector during a mock parallel run, listing the Orchestrator, Worker and Reviewer roles with each step's status and cost.
+    caption: A mock run, which tests the run flow without calling real agents.
+order: 5
+---
+
+Rove puts shells, AI coding agents, an editor and git in one window, with tabs and split panes.
+
+## What's in it
+
+- Agent panes for Claude Code, Codex, a read-only Codex and Hermes Agent.
+- Its own MCP server and bridge with 9 tools, which Claude Code and Codex use to communicate. Hermes Agent can't add an MCP server for a single launch, so it runs without that channel.
+- Autonomous runs with Orchestrator, Worker and Reviewer roles, and 2 to 4 Workers in separate git worktrees.
+- Terminal processes start through a small C layer, and git reads run under macOS `sandbox-exec`.
+
+## Status
+
+Release candidate 0.1.0. It is ad hoc signed and not notarized, so other Macs block it for now. I built it with AI coding agents working from milestone specs, M1 to M11.

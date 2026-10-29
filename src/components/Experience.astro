@@ -1,0 +1,74 @@
+---
+import { render } from "astro:content";
+import { getExperience, hasBody } from "../lib/content";
+import SectionHeader from "./SectionHeader.astro";
+
+interface Props {
+  marker: string;
+}
+
+const { marker } = Astro.props;
+const entries = await Promise.all(
+  (await getExperience()).map(async (entry) => ({
+    entry,
+    Content: hasBody(entry) ? (await render(entry)).Content : undefined,
+  })),
+);
+
+const monthYear = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+function period(start: Date, end?: Date) {
+  const from = monthYear.format(start);
+  const to = end && monthYear.format(end);
+  if (to === from) return from;
+  return `${from} - ${to ?? "Present"}`;
+}
+---
+
+<section
+  id="experience"
+  aria-labelledby="experience-heading"
+  class="shell pt-20 md:pt-32"
+>
+  <SectionHeader id="experience-heading" marker={marker} label="Experience" />
+  <ol class="mt-2 md:mt-4">
+    {entries.map(({ entry, Content }) => {
+      const { role, organization, url, location, start, end } = entry.data;
+      return (
+        <li class="grid gap-y-2 border-b border-line py-8 md:grid-cols-12 md:gap-x-8 md:py-10">
+          <p class="text-meta text-muted tabular-nums md:col-span-3 md:pt-1.5">
+            {period(start, end)}
+          </p>
+          <div class="md:col-span-6">
+            <h3 class="font-display text-[1.625rem] leading-tight tracking-[-0.01em] text-balance md:text-[1.875rem]">
+              {role}
+            </h3>
+            <p class="mt-1">
+              {url ? (
+                <a href={url} class="-mt-1 -mb-5 inline-block pt-1 pb-5">
+                  {organization}
+                </a>
+              ) : (
+                organization
+              )}
+            </p>
+            {Content && (
+              <div class="prose mt-5 text-muted">
+                <Content />
+              </div>
+            )}
+          </div>
+          {location && (
+            <p class="text-meta text-muted md:col-span-3 md:pt-1.5 md:text-right">
+              {location}
+            </p>
+          )}
+        </li>
+      );
+    })}
+  </ol>
+</section>

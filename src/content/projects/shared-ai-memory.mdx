@@ -1,0 +1,55 @@
+---
+title: Shared AI Memory
+summary: One self-hosted memory layer shared by my four coding agents, built on the open-source ai-memory server with 11 custom patches and a Python harness in front of it.
+year: 2026
+role: Solo project, in daily use
+tags: [Rust, Python, SQLite, MCP, systemd, Tailscale]
+links:
+  - label: Upstream ai-memory
+    url: https://github.com/akitaonrails/ai-memory
+cover:
+  src: ./shared-ai-memory/architecture.png
+  alt: "Diagram: Claude Code, Codex, Antigravity and Hermes Agent on a Mac send hooks and MCP queries over Tailscale to an Oracle Cloud VPS, where a Python harness sits in front of the patched ai-memory server and its SQLite store."
+featured: true
+order: 2
+---
+
+Claude Code, Codex, Antigravity and Hermes Agent all read and write the same project memory. The design rule was one knowledge store for every agent, on one server, with thin clients on the Mac.
+
+## Setup
+
+- Hooks in each agent send prompts and tool calls to the server. While the server is down, events queue on the Mac.
+- Claude Code and Hermes get relevant memory injected before each prompt. The Claude Code hook has a 350 ms budget and lets the prompt through if memory is slow. Codex and Antigravity query memory through MCP tools.
+- A Python harness sits in front of the Rust server and decides which memory each agent gets.
+- Everything runs as systemd services on an Oracle Cloud VPS, reached over Tailscale with token auth. Backups and harvesting run on timers.
+
+## The patches
+
+All 11 are diffs on upstream v3.0.0, written with AI coding agents and deployed one at a time.
+
+- Scope safety: refuse a request whose project scope is only inferred, instead of acting on whichever project wrote last.
+- Preference learning: Indonesian and mixed-language preference markers, skipping Codex suggestion sessions so they don't turn into fake preferences, and evidence checks so policy-like proposals wait for approval.
+- Session review: incremental and chunked review of long or resumed sessions.
+- Handoffs: background sessions no longer leave a handoff, handoffs and recency are ranked by working time, and assistant replies are captured.
+
+## Decisions
+
+### Refuse a project scope that is only inferred
+
+Resolving the project from the working directory on the server had already written a session into the wrong project. The scope patch makes the server refuse inferred scope. The cost is that every client has to send its workspace and project explicitly.
+
+### An optional reranker that fails open
+
+The harness makes one bounded reranker call. Any failure falls back to the server's own ranking, and a single failure opens the circuit. On a holdout set, precision was 0.29 with the reranker and 0.19 without, at a median of 479 ms against 110 ms.
+
+### Ending a session stays manual
+
+I ruled out closing a session on process exit, idle time or the latest session as unsafe, so for Codex and Antigravity I end sessions by hand.
+
+## Results
+
+- The upgrade from schema 64 to 80 kept every row: 1,538 pages, 458 sessions, 88,280 observations, 575 handoffs and 37 projects. The rehearsal migrated in under 1.5 s and rolled back in 1.7 s.
+- Upstream's test suite passes on the patched build, except one packaging test that also fails without the patches.
+- Harness relevance work cut wrong-project pointers from 3 of 7 reads to 0, cut repeated context from 7 of 7 reads to 0, and brought mean read time from 0.171 s to 0.072 s.
+- A cross-project replay went from 10 misleading items to 0, and from 15 useful items to 36.
+- Every deploy script checks the hash of the binary it replaces, and has backup and rollback steps.
