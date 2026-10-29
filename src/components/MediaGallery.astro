@@ -14,6 +14,14 @@ const HALF_SIZES = "(min-width: 48rem) 46vw, 92vw";
 // The first item spans the grid, as does a last item left alone in its row.
 const isFull = (index: number) =>
   index === 0 || (index === items.length - 1 && index % 2 === 1);
+// Cap a full-width portrait image so its height fits the viewport. Capping the
+// width, not using w-auto, keeps a lazy image sized so it still loads.
+const tallStyle = (index: number) => {
+  const item = items[index];
+  if (!isFull(index) || item.type !== "image") return undefined;
+  if (item.src.height <= item.src.width) return undefined;
+  return `max-width: calc(85vh * ${item.src.width} / ${item.src.height})`;
+};
 
 const prepared = await Promise.all(
   items.map(async (item) =>
@@ -66,7 +74,8 @@ const imageCount = items.filter((item) => item.type === "image").length;
                 src={item.src}
                 alt={item.alt}
                 sizes={isFull(index) ? FULL_SIZES : HALF_SIZES}
-                class="w-full transition-transform duration-700 ease-out group-hover:scale-[1.015]"
+                class="mx-auto w-full transition-transform duration-700 ease-out group-hover:scale-[1.015]"
+                style={tallStyle(index)}
               />
               <span class="sr-only">(open in image viewer)</span>
             </a>

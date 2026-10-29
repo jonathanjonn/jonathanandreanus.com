@@ -1,0 +1,33 @@
+---
+title: Virtual influencer image pipeline
+summary: A three-stage FLUX.2 workflow in ComfyUI that dresses a client's fictional character in a chosen garment and places her in a real location, with 24 workflow variants generated and checked by Node.js scripts.
+year: 2026
+role: Client project
+tags: [ComfyUI, FLUX.2 Dev, Node.js]
+media:
+  - type: image
+    src: ./virtual-influencer/final.jpg
+    alt: A photorealistic fictional woman in a mustard and cream windbreaker, black trousers and black ankle boots, standing on the tiled floor of a wood-panelled bar under a "PHOENIX" sign, with a marble fountain behind her.
+    caption: A final-stage output.
+order: 8
+---
+
+The client needed one fictional character who looks like the same person in every image, wearing a given garment, in a real place. A single generation pass that got the face, body, garment and location references at once averaged them: the face became a blend of the references, the garment kept only its rough colors, and the location turned into a style instead of a floor to stand on, so the character sometimes ended up standing on the fountain.
+
+## How it works
+
+The workflow runs three FLUX.2 Dev stages, and each one has a single job:
+
+1. **Character master.** Three face and three body references produce the character. This image is never posted.
+2. **Try-on.** The master, the garment photo and the front face reference produce the character wearing the garment.
+3. **Scene.** The location photo goes in first, then the try-on result, the front face and the garment, so the final photo is built on the location's floor and perspective.
+
+The first two stages save their own images, which show where a bad result went wrong.
+
+## Workflows as code
+
+ComfyUI saves a workflow as a large JSON graph of nodes and links. The first four FLUX.2 workflows were edited directly as JSON. The 24 after them are written by Node.js builders, for example by taking an earlier graph and rewiring its links. Each builder has a validator that checks the generated graph for the expected nodes, links and settings, and 13 of the validators also build the workflow twice to confirm the output is identical.
+
+## Status
+
+The image below comes from the final stage. The tile pattern around the boots still smears, so floor contact still needs work.
